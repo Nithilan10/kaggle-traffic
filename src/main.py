@@ -14,6 +14,7 @@ from kaggle_traffic.models.low_rank.svd.svd import svd_impute
 from kaggle_traffic.models.low_rank.dmd import dmd_impute
 from kaggle_traffic.models.low_rank.matrix_completion import matrix_complete
 from kaggle_traffic.models.graph.interpolate import graph_interpolation
+from kaggle_traffic.models.graph.gnn import gnn_impute
 
 if __name__ == "__main__":
 
@@ -120,6 +121,10 @@ if __name__ == "__main__":
             graph_speed_rmse = rmse(true_values["speed_kmh"].to_numpy(), graph_df.loc[masked_indices, "speed_kmh"].to_numpy())
             graph_flow_rmse = rmse(true_values["flow_vph"].to_numpy(), graph_df.loc[masked_indices, "flow_vph"].to_numpy())
             print(f"Graph speed RMSE: {graph_speed_rmse:.4f}  flow RMSE: {graph_flow_rmse:.4f}")
+            gnn_df = gnn_impute(masked_df)
+            gnn_speed_rmse = rmse(true_values["speed_kmh"].to_numpy(), gnn_df.loc[masked_indices, "speed_kmh"].to_numpy())
+            gnn_flow_rmse = rmse(true_values["flow_vph"].to_numpy(), gnn_df.loc[masked_indices, "flow_vph"].to_numpy())
+            print(f"GNN   speed RMSE: {gnn_speed_rmse:.4f}  flow RMSE: {gnn_flow_rmse:.4f}")
 
             speed_matrix = build_matrix(masked_df, "speed_kmh")
             flow_matrix = build_matrix(masked_df, "flow_vph")
