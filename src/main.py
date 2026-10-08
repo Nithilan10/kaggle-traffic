@@ -12,6 +12,7 @@ from kaggle_traffic.models.linear_interpolation.spatiotemporal import spatiotemp
 from kaggle_traffic.models.low_rank.svd.matrix import build_matrix
 from kaggle_traffic.models.low_rank.svd.svd import svd_impute
 from kaggle_traffic.models.low_rank.dmd import dmd_impute
+from kaggle_traffic.models.low_rank.matrix_completion import matrix_complete
 
 if __name__ == "__main__":
 
@@ -154,5 +155,26 @@ if __name__ == "__main__":
             print(f"Best SVD flow:  rank {best_svd_flow[1]} RMSE {best_svd_flow[0]:.4f}")
             print(f"Best DMD speed: rank {best_dmd_speed[1]} RMSE {best_dmd_speed[0]:.4f}")
             print(f"Best DMD flow:  rank {best_dmd_flow[1]} RMSE {best_dmd_flow[0]:.4f}")
+
+            shrinkages = (0.01, 0.05, 0.1, 0.2, 0.4)
+            best_mc_speed = (float("inf"), None)
+            best_mc_flow = (float("inf"), None)
+            for shrinkage in shrinkages:
+                mc_speed = matrix_complete(speed_matrix, shrinkage=shrinkage)
+                mc_flow = matrix_complete(flow_matrix, shrinkage=shrinkage)
+                mc_speed_rmse = rmse(true_values["speed_kmh"].to_numpy(), predictions_for(masked_df, masked_indices, mc_speed))
+                mc_flow_rmse = rmse(true_values["flow_vph"].to_numpy(), predictions_for(masked_df, masked_indices, mc_flow))
+                print(
+                    f"\nSHRINKAGE {shrinkage:.2f}  "
+                    f"speed rank {mc_speed.attrs['rank']}  flow rank {mc_flow.attrs['rank']}"
+                )
+                print(f"MC   speed RMSE: {mc_speed_rmse:.4f}  flow RMSE: {mc_flow_rmse:.4f}")
+                if mc_speed_rmse < best_mc_speed[0]:
+                    best_mc_speed = (mc_speed_rmse, shrinkage)
+                if mc_flow_rmse < best_mc_flow[0]:
+                    best_mc_flow = (mc_flow_rmse, shrinkage)
+
+            print(f"\nBest MC speed: shrinkage {best_mc_speed[1]} RMSE {best_mc_speed[0]:.4f}")
+            print(f"Best MC flow:  shrinkage {best_mc_flow[1]} RMSE {best_mc_flow[0]:.4f}")
 
     low_rank()

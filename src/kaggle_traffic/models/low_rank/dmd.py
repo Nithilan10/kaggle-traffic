@@ -58,6 +58,8 @@ def dmd_impute(
     """
     original = matrix.to_numpy(dtype=np.float64)
     observed = np.isfinite(original)
+    if not observed.any():
+        raise ValueError("matrix has no observed entries")
     column_mean = _observed_column_mean(original)
     if initial is None:
         current = svd_impute(matrix, rank=rank)
