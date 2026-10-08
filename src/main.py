@@ -15,6 +15,7 @@ from kaggle_traffic.models.low_rank.dmd import dmd_impute
 from kaggle_traffic.models.low_rank.matrix_completion import matrix_complete
 from kaggle_traffic.models.graph.interpolate import graph_interpolation
 from kaggle_traffic.models.graph.gnn import gnn_impute
+from kaggle_traffic.models.graph.st_gnn import pretrain_stgnn, stgnn_impute
 from kaggle_traffic.models.transformer.st_transformer import st_impute
 
 if __name__ == "__main__":
@@ -112,7 +113,10 @@ if __name__ == "__main__":
 
     def low_rank():
         ranks = (2, 5, 10, 15, 20)
-        data_dir = Path("/Users/selvakumarrangasamy/Documents/GitHub/kaggle-traffic/data/raw/kaggle_public/corridors/D7_I10_E/private/mainline_states_masked/mask_regime=R2")
+        corridor = Path("/Users/selvakumarrangasamy/Documents/GitHub/kaggle-traffic/data/raw/kaggle_public/corridors/D7_I10_E")
+        data_dir = corridor / "private/mainline_states_masked/mask_regime=R2"
+        train_files = sorted((corridor / "train/mainline_states").rglob("*.parquet"))[:4]
+        pretrained = pretrain_stgnn([pd.read_parquet(path) for path in train_files], epochs=4)
         for file in sorted(os.listdir(data_dir)):
             if not file.endswith(".parquet"):
                 continue
@@ -130,6 +134,10 @@ if __name__ == "__main__":
             transformer_speed_rmse = rmse(true_values["speed_kmh"].to_numpy(), transformer_df.loc[masked_indices, "speed_kmh"].to_numpy())
             transformer_flow_rmse = rmse(true_values["flow_vph"].to_numpy(), transformer_df.loc[masked_indices, "flow_vph"].to_numpy())
             print(f"ST    speed RMSE: {transformer_speed_rmse:.4f}  flow RMSE: {transformer_flow_rmse:.4f}")
+            stgnn_df = stgnn_impute(masked_df, pretrained=pretrained)
+            stgnn_speed_rmse = rmse(true_values["speed_kmh"].to_numpy(), stgnn_df.loc[masked_indices, "speed_kmh"].to_numpy())
+            stgnn_flow_rmse = rmse(true_values["flow_vph"].to_numpy(), stgnn_df.loc[masked_indices, "flow_vph"].to_numpy())
+            print(f"STGNN speed RMSE: {stgnn_speed_rmse:.4f}  flow RMSE: {stgnn_flow_rmse:.4f}")
 
             speed_matrix = build_matrix(masked_df, "speed_kmh")
             flow_matrix = build_matrix(masked_df, "flow_vph")
